@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Roast AI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #1DB954;
+            color: white;
+            padding: 20px;
+        }
+        h1 { font-size: 2rem; }
+        button {
+            background-color: black;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        button:hover { background-color: #333; }
+        #artists, #roast { margin-top: 20px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>🔥 Spotify Roast AI 🔥</h1>
+    <p>Log in with Spotify, and let the AI roast your music taste!</p>
+    
+    <button id="login-btn">Login with Spotify</button>
+    
+    <div id="artists" class="hidden">
+        <h2>Your Top Artists:</h2>
+        <ul id="artists-list"></ul>
+        <button id="roast-btn">Roast Me!</button>
+    </div>
+
+    <div id="roast" class="hidden">
+        <h2>🔥 Your Roast:</h2>
+        <p id="roast-text"></p>
+    </div>
+
+    <script>
+        const backendURL = "roast-spotify-production.up.railway.app"; // Change this to your Railway backend URL
+
+        // Check if access_token is in the URL
+        const params = new URLSearchParams(window.location.search);
+        const accessToken = params.get("access_token");
+
+        if (accessToken) {
+            document.getElementById("login-btn").style.display = "none";
+            fetch(`${backendURL}/top-artists?access_token=${accessToken}`)
+                .then(res => res.json())
+                .then(artists => {
+                    document.getElementById("artists").classList.remove("hidden");
+                    const artistsList = document.getElementById("artists-list");
+                    artists.forEach(artist => {
+                        const li = document.createElement("li");
+                        li.textContent = artist;
+                        artistsList.appendChild(li);
+                    });
+                })
+                .catch(error => console.error("Error fetching artists:", error));
+        } else {
+            document.getElementById("login-btn").addEventListener("click", () => {
+                window.location.href = `${backendURL}/login`;
+            });
+        }
+
+        document.getElementById("roast-btn").addEventListener("click", () => {
+            fetch(`${backendURL}/roast?access_token=${accessToken}`)
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById("roast").classList.remove("hidden");
+                    document.getElementById("roast-text").textContent = data.roast;
+                })
+                .catch(error => console.error("Error fetching roast:", error));
+        });
+    </script>
+</body>
+</html>
