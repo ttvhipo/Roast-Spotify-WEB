@@ -24,6 +24,7 @@
         button:hover { background-color: #333; }
         #artists, #roast { margin-top: 20px; }
         .hidden { display: none; }
+        .error { color: red; margin-top: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -43,41 +44,57 @@
         <p id="roast-text"></p>
     </div>
 
+    <p id="error-message" class="error hidden"></p>
+
     <script>
-        const backendURL = "roast-spotify-production.up.railway.app"; // Change this to your Railway backend URL
+        document.addEventListener("DOMContentLoaded", () => {
+            const backendURL = "https://roast-spotify-production.up.railway.app"; // Ensure HTTPS is included
+            const params = new URLSearchParams(window.location.search);
+            const accessToken = params.get("access_token");
 
-        // Check if access_token is in the URL
-        const params = new URLSearchParams(window.location.search);
-        const accessToken = params.get("access_token");
+            const loginBtn = document.getElementById("login-btn");
+            const artistsDiv = document.getElementById("artists");
+            const roastDiv = document.getElementById("roast");
+            const errorMessage = document.getElementById("error-message");
+            const roastBtn = document.getElementById("roast-btn");
 
-        if (accessToken) {
-            document.getElementById("login-btn").style.display = "none";
-            fetch(`${backendURL}/top-artists?access_token=${accessToken}`)
-                .then(res => res.json())
-                .then(artists => {
-                    document.getElementById("artists").classList.remove("hidden");
-                    const artistsList = document.getElementById("artists-list");
-                    artists.forEach(artist => {
-                        const li = document.createElement("li");
-                        li.textContent = artist;
-                        artistsList.appendChild(li);
-                    });
-                })
-                .catch(error => console.error("Error fetching artists:", error));
-        } else {
-            document.getElementById("login-btn").addEventListener("click", () => {
-                window.location.href = "https://roast-spotify-production.up.railway.app/login";
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.classList.remove("hidden");
+            }
+
+            if (accessToken) {
+                loginBtn.style.display = "none";
+                fetch(`${backendURL}/top-artists?access_token=${accessToken}`)
+                    .then(res => res.json())
+                    .then(artists => {
+                        if (artists.error) throw new Error(artists.error);
+                        artistsDiv.classList.remove("hidden");
+                        const artistsList = document.getElementById("artists-list");
+                        artistsList.innerHTML = "";
+                        artists.forEach(artist => {
+                            const li = document.createElement("li");
+                            li.textContent = artist;
+                            artistsList.appendChild(li);
+                        });
+                    })
+                    .catch(error => showError("Error fetching artists: " + error.message));
+            }
+
+            loginBtn.addEventListener("click", () => {
+                window.location.href = `${backendURL}/login`;
             });
-        }
 
-        document.getElementById("roast-btn").addEventListener("click", () => {
-            fetch(`${backendURL}/roast?access_token=${accessToken}`)
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById("roast").classList.remove("hidden");
-                    document.getElementById("roast-text").textContent = data.roast;
-                })
-                .catch(error => console.error("Error fetching roast:", error));
+            roastBtn.addEventListener("click", () => {
+                fetch(`${backendURL}/roast?access_token=${accessToken}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.error) throw new Error(data.error);
+                        roastDiv.classList.remove("hidden");
+                        document.getElementById("roast-text").textContent = data.roast;
+                    })
+                    .catch(error => showError("Error fetching roast: " + error.message));
+            });
         });
     </script>
 </body>
